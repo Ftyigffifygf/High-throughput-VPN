@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>High-Throughput VPN Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .header p {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(31, 38, 135, 0.5);
+        }
+
+        .card h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-active {
+            background-color: #27ae60;
+            box-shadow: 0 0 10px rgba(39, 174, 96, 0.5);
+        }
+
+        .status-inactive {
+            background-color: #e74c3c;
+            box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
+        }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .metric:last-child {
+            border-bottom: none;
+        }
+
+        .metric-label {
+            font-weight: 600;
+            color: #34495e;
+        }
+
+        .metric-value {
+            font-weight: bold;
+            color: #2980b9;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: #ecf0f1;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2980b9);
+            transition: width 0.3s ease;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            background: linear-gradient(45deg, #2980b9, #3498db);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+        }
+
+        .btn-danger:hover {
+            background: linear-gradient(45deg, #c0392b, #e74c3c);
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+        }
+
+        .logs-container {
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            border-radius: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+
+        .logs-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .logs-container::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        .logs-container::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        .peer-list, .client-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .peer-item, .client-item {
+            background: rgba(52, 152, 219, 0.1);
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+        }
+
+        .error {
+            background: rgba(231, 76, 60, 0.1);
+            color: #e74c3c;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #e74c3c;
+        }
+
+        .success {
+            background: rgba(39, 174, 96, 0.1);
+            color: #27ae60;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #27ae60;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔒 High-Throughput VPN Dashboard</h1>
+            <p>Monitor and manage your VPN infrastructure</p>
+        </div>
+
+        <div class="dashboard-grid">
+            <!-- System Status Card -->
+            <div class="card">
+                <h3>🖥️ System Status</h3>
+                <div id="system-status" class="loading">Loading system information...</div>
+            </div>
+
+            <!-- VPN Services Card -->
+            <div class="card">
+                <h3>🔐 VPN Services</h3>
+                <div id="vpn-services" class="loading">Loading VPN services...</div>
+            </div>
+
+            <!-- Performance Metrics Card -->
+            <div class="card">
+                <h3>📊 Performance Metrics</h3>
+                <div id="performance-metrics" class="loading">Loading performance data...</div>
+            </div>
+
+            <!-- Security Status Card -->
+            <div class="card">
+                <h3>🛡️ Security Status</h3>
+                <div id="security-status" class="loading">Loading security information...</div>
+            </div>
+
+            <!-- WireGuard Peers Card -->
+            <div class="card">
+                <h3>🔗 WireGuard Peers</h3>
+                <div id="wireguard-peers" class="loading">Loading WireGuard peers...</div>
+            </div>
+
+            <!-- OpenVPN Clients Card -->
+            <div class="card">
+                <h3>👥 OpenVPN Clients</h3>
+                <div id="openvpn-clients" class="loading">Loading OpenVPN clients...</div>
+            </div>
+        </div>
+
+        <!-- Logs Section -->
+        <div class="card">
+            <h3>📋 System Logs</h3>
+            <div>
+                <button class="btn" onclick="loadLogs('system')">System Logs</button>
+                <button class="btn" onclick="loadLogs('wireguard')">WireGuard Logs</button>
+                <button class="btn" onclick="loadLogs('openvpn')">OpenVPN Logs</button>
+                <button class="btn" onclick="loadLogs('security')">Security Logs</button>
+                <button class="btn btn-danger" onclick="clearLogs()">Clear</button>
+            </div>
+            <div id="logs-container" class="logs-container" style="display: none;">
+                <div id="logs-content"></div>
+            </div>
+        </div>
+
+        <!-- Actions Section -->
+        <div class="card">
+            <h3>⚙️ Actions</h3>
+            <div>
+                <button class="btn" onclick="refreshDashboard()">🔄 Refresh Dashboard</button>
+                <button class="btn" onclick="backupConfig()">💾 Backup Configuration</button>
+                <button class="btn" onclick="downloadReport()">📄 Download Report</button>
+            </div>
+            <div id="action-status"></div>
+        </div>
+    </div>
+
+    <script>
+        // API base URL
+        const API_BASE = '/api/vpn';
+
+        // Auto-refresh interval (30 seconds)
+        let refreshInterval;
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboard();
+            startAutoRefresh();
+        });
+
+        function startAutoRefresh() {
+            refreshInterval = setInterval(loadDashboard, 30000);
+        }
+
+        function stopAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+        }
+
+        async function loadDashboard() {
+            try {
+                await Promise.all([
+                    loadSystemStatus(),
+                    loadVPNServices(),
+                    loadPerformanceMetrics(),
+                    loadSecurityStatus(),
+                    loadWireGuardPeers(),
+                    loadOpenVPNClients()
+                ]);
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+
+        async function loadSystemStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/status`);
+                const data = await response.json();
+                
+                const systemHtml = `
+                    <div class="metric">
+                        <span class="metric-label">Uptime</span>
+                        <span class="metric-value">${data.system.uptime || 'N/A'}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Load Average</span>
+                        <span class="metric-value">${data.system.load_average || 'N/A'}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">CPU Usage</span>
+                        <span class="metric-value">${data.system.cpu_usage || 'N/A'}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Memory Usage</span>
+                        <span class="metric-value">${data.system.memory_usage || 'N/A'}</span>
+                    </div>
+                `;
+                
+                document.getElementById('system-status').innerHTML = systemHtml;
+            } catch (error) {
+                document.getElementById('system-status').innerHTML = '<div class="error">Failed to load system status</div>';
+            }
+        }
+
+        async function loadVPNServices() {
+            try {
+                const response = await fetch(`${API_BASE}/status`);
+                const data = await response.json();
+                
+                const servicesHtml = `
+                    <div class="metric">
+                        <span class="metric-label">
+                            <span class="status-indicator ${data.services.wireguard.active ? 'status-active' : 'status-inactive'}"></span>
+                            WireGuard
+                        </span>
+                        <span class="metric-value">${data.services.wireguard.active ? 'Active' : 'Inactive'}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">
+                            <span class="status-indicator ${data.services.openvpn.active ? 'status-active' : 'status-inactive'}"></span>
+                            OpenVPN
+                        </span>
+                        <span class="metric-value">${data.services.openvpn.active ? 'Active' : 'Inactive'}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">
+                            <span class="status-indicator ${data.services.haproxy.active ? 'status-active' : 'status-inactive'}"></span>
+                            Load Balancer
+                        </span>
+                        <span class="metric-value">${data.services.haproxy.active ? 'Active' : 'Inactive'}</span>
+                    </div>
+                `;
+                
+                document.getElementById('vpn-services').innerHTML = servicesHtml;
+            } catch (error) {
+                document.getElementById('vpn-services').innerHTML = '<div class="error">Failed to load VPN services</div>';
+            }
+        }
+
+        async function loadPerformanceMetrics() {
+            try {
+                const response = await fetch(`${API_BASE}/system/performance`);
+                const data = await response.json();
+                
+                const performanceHtml = `
+                    <div class="metric">
+                        <span class="metric-label">CPU Usage</span>
+                        <div>
+                            <span class="metric-value">${data.cpu_usage?.toFixed(1) || 0}%</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${data.cpu_usage || 0}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Memory Usage</span>
+                        <div>
+                            <span class="metric-value">${data.memory_usage?.toFixed(1) || 0}%</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${data.memory_usage || 0}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Disk Usage</span>
+                        <div>
+                            <span class="metric-value">${data.disk_usage?.toFixed(1) || 0}%</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${data.disk_usage || 0}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('performance-metrics').innerHTML = performanceHtml;
+            } catch (error) {
+                document.getElementById('performance-metrics').innerHTML = '<div class="error">Failed to load performance metrics</div>';
+            }
+        }
+
+        async function loadSecurityStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/security/status`);
+                const data = await response.json();
+                
+                const securityHtml = `
+                    <div class="metric">
+                        <span class="metric-label">
+                            <span class="status-indicator ${data.fail2ban.active ? 'status-active' : 'status-inactive'}"></span>
+                            Fail2ban
+                        </span>
+                        <span class="metric-value">${data.fail2ban.active ? 'Active' : 'Inactive'}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">
+                            <span class="status-indicator ${data.ufw.active ? 'status-active' : 'status-inactive'}"></span>
+                            Firewall
+                        </span>
+                        <span class="metric-value">${data.ufw.active ? 'Active' : 'Inactive'}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Recent Auth Failures</span>
+                        <span class="metric-value">${data.recent_auth_failures?.length || 0}</span>
+                    </div>
+                `;
+                
+                document.getElementById('security-status').innerHTML = securityHtml;
+            } catch (error) {
+                document.getElementById('security-status').innerHTML = '<div class="error">Failed to load security status</div>';
+            }
+        }
+
+        async function loadWireGuardPeers() {
+            try {
+                const response = await fetch(`${API_BASE}/wireguard/peers`);
+                const data = await response.json();
+                
+                if (data.peers && data.peers.length > 0) {
+                    const peersHtml = `
+                        <div class="peer-list">
+                            ${data.peers.map(peer => `
+                                <div class="peer-item">
+                                    <strong>Peer:</strong> ${peer.public_key.substring(0, 20)}...<br>
+                                    <strong>Endpoint:</strong> ${peer.endpoint || 'N/A'}<br>
+                                    <strong>Allowed IPs:</strong> ${peer.allowed_ips || 'N/A'}<br>
+                                    <strong>Latest Handshake:</strong> ${peer.latest_handshake || 'Never'}<br>
+                                    <strong>Transfer:</strong> ↓${peer.transfer.received} ↑${peer.transfer.sent}
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    document.getElementById('wireguard-peers').innerHTML = peersHtml;
+                } else {
+                    document.getElementById('wireguard-peers').innerHTML = '<div class="metric">No active peers</div>';
+                }
+            } catch (error) {
+                document.getElementById('wireguard-peers').innerHTML = '<div class="error">Failed to load WireGuard peers</div>';
+            }
+        }
+
+        async function loadOpenVPNClients() {
+            try {
+                const response = await fetch(`${API_BASE}/openvpn/clients`);
+                const data = await response.json();
+                
+                if (data.clients && data.clients.length > 0) {
+                    const clientsHtml = `
+                        <div class="client-list">
+                            ${data.clients.map(client => `
+                                <div class="client-item">
+                                    <strong>Client:</strong> ${client.name}<br>
+                                    <strong>Real Address:</strong> ${client.real_address}<br>
+                                    <strong>Virtual Address:</strong> ${client.virtual_address}<br>
+                                    <strong>Connected Since:</strong> ${client.connected_since}<br>
+                                    <strong>Transfer:</strong> ↓${client.bytes_received} ↑${client.bytes_sent}
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    document.getElementById('openvpn-clients').innerHTML = clientsHtml;
+                } else {
+                    document.getElementById('openvpn-clients').innerHTML = '<div class="metric">No connected clients</div>';
+                }
+            } catch (error) {
+                document.getElementById('openvpn-clients').innerHTML = '<div class="error">Failed to load OpenVPN clients</div>';
+            }
+        }
+
+        async function loadLogs(type) {
+            try {
+                const response = await fetch(`${API_BASE}/logs?type=${type}&lines=100`);
+                const data = await response.json();
+                
+                const logsContainer = document.getElementById('logs-container');
+                const logsContent = document.getElementById('logs-content');
+                
+                if (data.logs && data.logs.length > 0) {
+                    logsContent.innerHTML = data.logs.join('<br>');
+                    logsContainer.style.display = 'block';
+                } else {
+                    logsContent.innerHTML = 'No logs available';
+                    logsContainer.style.display = 'block';
+                }
+            } catch (error) {
+                document.getElementById('logs-content').innerHTML = '<div class="error">Failed to load logs</div>';
+                document.getElementById('logs-container').style.display = 'block';
+            }
+        }
+
+        function clearLogs() {
+            document.getElementById('logs-container').style.display = 'none';
+            document.getElementById('logs-content').innerHTML = '';
+        }
+
+        function refreshDashboard() {
+            stopAutoRefresh();
+            loadDashboard();
+            startAutoRefresh();
+            showActionStatus('Dashboard refreshed successfully', 'success');
+        }
+
+        async function backupConfig() {
+            try {
+                const response = await fetch(`${API_BASE}/config/backup`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showActionStatus(`Configuration backup created: ${data.backup_file}`, 'success');
+                } else {
+                    showActionStatus(`Backup failed: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showActionStatus('Failed to create backup', 'error');
+            }
+        }
+
+        function downloadReport() {
+            const reportData = {
+                timestamp: new Date().toISOString(),
+                system: document.getElementById('system-status').innerText,
+                services: document.getElementById('vpn-services').innerText,
+                performance: document.getElementById('performance-metrics').innerText,
+                security: document.getElementById('security-status').innerText
+            };
+            
+            const blob = new Blob([JSON.stringify(reportData, null, 2)], {
+                type: 'application/json'
+            });
+            
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `vpn-report-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showActionStatus('Report downloaded successfully', 'success');
+        }
+
+        function showActionStatus(message, type) {
+            const statusDiv = document.getElementById('action-status');
+            statusDiv.innerHTML = `<div class="${type}">${message}</div>`;
+            setTimeout(() => {
+                statusDiv.innerHTML = '';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
+

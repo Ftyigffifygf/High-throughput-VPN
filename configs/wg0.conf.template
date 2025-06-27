@@ -1,0 +1,35 @@
+# WireGuard Server Configuration Template
+# This is a template configuration for a high-throughput WireGuard VPN server
+
+[Interface]
+# Server's private key (generate with: wg genkey)
+PrivateKey = SERVER_PRIVATE_KEY_PLACEHOLDER
+
+# Server's public IP address and port
+Address = 10.0.0.1/24
+ListenPort = 51820
+
+# Post-up and post-down scripts for iptables rules
+PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
+
+# DNS servers for clients
+DNS = 8.8.8.8, 8.8.4.4
+
+# MTU optimization for high throughput
+MTU = 1420
+
+# Save configuration
+SaveConfig = true
+
+# Example client peer configuration (add more as needed)
+[Peer]
+# Client's public key
+PublicKey = CLIENT_PUBLIC_KEY_PLACEHOLDER
+
+# Allowed IPs for this client
+AllowedIPs = 10.0.0.2/32
+
+# Keep alive to maintain connection through NAT
+PersistentKeepalive = 25
+

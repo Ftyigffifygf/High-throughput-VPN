@@ -1,0 +1,71 @@
+# OpenVPN Server Configuration Template
+# This is a template configuration for a high-throughput OpenVPN server
+
+# Server mode and protocol
+mode server
+proto udp
+port 1194
+
+# Virtual network interface
+dev tun
+
+# SSL/TLS root certificate (ca), certificate (cert), and private key (key)
+ca ca.crt
+cert server.crt
+key server.key
+
+# Diffie hellman parameters
+dh dh2048.pem
+
+# Network topology
+topology subnet
+
+# Configure server mode and supply a VPN subnet
+server 10.8.0.0 255.255.255.0
+
+# Maintain a record of client <-> virtual IP address associations
+ifconfig-pool-persist ipp.txt
+
+# Push routes to the client to allow it to reach other private subnets
+push "redirect-gateway def1 bypass-dhcp"
+push "dhcp-option DNS 8.8.8.8"
+push "dhcp-option DNS 8.8.4.4"
+
+# Allow multiple clients with the same common name
+duplicate-cn
+
+# Keep alive settings
+keepalive 10 120
+
+# Enable compression for better performance (use with caution on newer versions)
+compress lz4-v2
+push "compress lz4-v2"
+
+# Reduce the OpenVPN daemon's privileges after initialization
+user nobody
+group nogroup
+
+# The persist options will try to avoid accessing certain resources on restart
+persist-key
+persist-tun
+
+# Output a short status file showing current connections
+status openvpn-status.log
+
+# Log verbosity level
+verb 3
+
+# Silence repeating messages
+mute 20
+
+# Performance optimizations
+fast-io
+sndbuf 0
+rcvbuf 0
+
+# TCP MSS fix for performance
+mssfix 1450
+
+# Explicit exit notify
+explicit-exit-notify 1
+

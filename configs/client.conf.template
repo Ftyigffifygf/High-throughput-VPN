@@ -1,0 +1,29 @@
+# WireGuard Client Configuration Template
+# This is a template configuration for a WireGuard VPN client
+
+[Interface]
+# Client's private key (generate with: wg genkey)
+PrivateKey = CLIENT_PRIVATE_KEY_PLACEHOLDER
+
+# Client's VPN IP address
+Address = 10.0.0.2/32
+
+# DNS servers
+DNS = 8.8.8.8, 8.8.4.4
+
+# MTU optimization for high throughput
+MTU = 1420
+
+[Peer]
+# Server's public key
+PublicKey = SERVER_PUBLIC_KEY_PLACEHOLDER
+
+# Server's public IP address and port
+Endpoint = SERVER_IP_PLACEHOLDER:51820
+
+# Route all traffic through VPN (0.0.0.0/0) or specific subnets
+AllowedIPs = 0.0.0.0/0
+
+# Keep alive to maintain connection through NAT
+PersistentKeepalive = 25
+
