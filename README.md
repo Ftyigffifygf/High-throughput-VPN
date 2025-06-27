@@ -1,4 +1,4 @@
-# High-Throughput VPN (Google COursera Project)
+# High-Throughput VPN (Google Coursera Project)
 
 A comprehensive, enterprise-grade VPN solution designed for high performance, security, and scalability. This solution supports both WireGuard and OpenVPN protocols with advanced features including load balancing, comprehensive monitoring, and automated management capabilities.
 
