@@ -330,8 +330,8 @@ cd high-throughput-vpn
 - **Custom Development**: Tailored solutions and integrations
 
 ### Contact Information
-- **Email**: support@high-throughput-vpn.com
-- **Website**: https://high-throughput-vpn.com
+- **Email**: giirish010904@gmail.com(temporary)
+- **Website**: Coming soon
 - **Documentation**: https://docs.high-throughput-vpn.com
 
 ---
